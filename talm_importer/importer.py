@@ -6,6 +6,7 @@
 #
 
 import encodings
+import inspect
 import os
 import re
 import shutil
@@ -20,7 +21,7 @@ from trac.env import Environment
 from trac.perm import IPermissionRequestor
 from trac.ticket import TicketSystem
 from trac.ticket import model
-from trac.util import arity, get_reporter_id
+from trac.util import get_reporter_id
 from trac.util.compat import set, sorted
 from trac.util.html import html
 from trac.util.text import to_unicode
@@ -427,7 +428,7 @@ class ImportModule(Component):
 
         return processor.end_process(row_idx)
 
-    if arity(Environment.get_known_users) == 1:
+    if 'db' not in inspect.getargspec(Environment.get_known_users)[0]:
         def _get_known_users(self, db):
             return self.env.get_known_users()
     else:

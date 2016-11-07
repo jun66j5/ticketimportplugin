@@ -346,14 +346,14 @@ class PreviewProcessor(ProcessorBase):
     # This could be simplified...
     def process_missing_fields(self, missingfields, missingemptyfields, missingdefaultedfields, computedfields):
         self.message += ' * Some Trac fields are not present in the import. They will default to:\n\n'
-        self.message += "   ||'''field'''||'''Default value'''||\n"
+        self.message += "   || '''field''' || '''Default value''' ||\n"
         if missingemptyfields != []:
-            self.message += u"   ||%s||''(Empty value)''||\n" \
+            self.message += u"   || %s || ''(Empty value)'' ||\n" \
                             % u', '.join([to_unicode(x.capitalize()) for x in missingemptyfields])
             
         if missingdefaultedfields != []:
             for f in missingdefaultedfields:
-                self.message += u'   ||%s||%s||\n' % (to_unicode(f.capitalize()), computedfields[f]['value'])
+                self.message += u'   || %s || %s ||\n' % (to_unicode(f.capitalize()), computedfields[f]['value'])
 
         self.message += '(You can change some of these default values in the Trac Admin module, if you are administrator; or you can add the corresponding column to your spreadsheet and re-upload it).\n'
 
@@ -433,9 +433,9 @@ class PreviewProcessor(ProcessorBase):
             
         if newvalues:
             self.message += ' * Some lookup values are not found and will be added to the possible list of values:\n\n'
-            self.message += "   ||'''field'''||'''New values'''||\n"
-            for field, values in newvalues.iteritems():                
-                self.message += u"   ||%s||%s||\n" % (to_unicode(field.capitalize()), u', '.join(values))
+            self.message += "   || '''field''' || '''New values''' ||\n"
+            for field, values in newvalues.iteritems():
+                self.message += u"   || %s || %s ||\n" % (to_unicode(field.capitalize()), u', '.join(values))
             
 
     def process_new_users(self, newusers):

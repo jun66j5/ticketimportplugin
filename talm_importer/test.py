@@ -116,12 +116,18 @@ class ImporterTestCase(unittest.TestCase):
         #sys.stdout = tempstdout
         #req.display(template, content_type or 'text/html')
         #open('/tmp/out.html', 'w').write(req.hdf.render(template, None))
+        def empty2none(cursor):  # see trac:#11018
+            def to_none(value):
+                if value == '':
+                    value = None
+                return value
+            return [tuple(to_none(value) for value in row) for row in cursor]
         _exec(cursor, "SELECT * FROM ticket ORDER BY id")
-        tickets = cursor.fetchall()
+        tickets = empty2none(cursor)
         _exec(cursor, "SELECT * FROM ticket_custom ORDER BY ticket, name")
-        tickets_custom = cursor.fetchall()
+        tickets_custom = empty2none(cursor)
         _exec(cursor, "SELECT * FROM ticket_change")
-        tickets_change = cursor.fetchall()
+        tickets_change = empty2none(cursor)
         _exec(cursor, "SELECT * FROM enum ORDER BY type, value, name")
         enums = [f for f in set(cursor.fetchall()) - set(enums_before)]
         _exec(cursor, "SELECT * FROM component ORDER BY name")
@@ -181,7 +187,10 @@ class ImporterTestCase(unittest.TestCase):
     def _setup(self, configuration = None, plugin_dir=None):
         configuration = configuration or '[ticket-custom]\nmycustomfield = text\nmycustomfield.label = My Custom Field\nmycustomfield.order = 1\n'
 
-        configuration += '\n[ticket]\ndefault_type = task\n'
+        configuration += ('\n'
+                          '[ticket]\n'
+                          'default_type = task\n'
+                          'default_owner = \n')
 
         env_path = tempfile.mkdtemp(prefix='ticketimportplugin-')
         env = Environment(env_path, create=True)
@@ -206,7 +215,7 @@ class ImporterTestCase(unittest.TestCase):
         @with_transaction(env)
         def do_insert(db):
             cursor = db.cursor()
-            _exec(cursor, "INSERT INTO ticket VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [1245, u'defect', 1191377630, 1191377630, u'component1', None, u'major', u'somebody', u'anonymous', u'', u'', u'', u'new', None, u'sum2', u'', u''])
+            _exec(cursor, "INSERT INTO ticket VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [1245, u'defect', 1191377630, 1191377630, u'component1', None, u'major', u'somebody', u'anonymous', None, None, None, u'new', None, u'sum2', None, None])
 
     def test_import_1(self):
         env = self._setup()
@@ -237,7 +246,7 @@ class ImporterTestCase(unittest.TestCase):
         @with_transaction(env)
         def do_insert(db):
             cursor = db.cursor()
-            _exec(cursor, "INSERT INTO ticket VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [1245, u'defect', 1191377630, 1191377630, u'component1', None, u'major', u'somebody', u'anonymous', u'', u'', u'', u'new', None, u'sum2', u'', u''])
+            _exec(cursor, "INSERT INTO ticket VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [1245, u'defect', 1191377630, 1191377630, u'component1', None, u'major', u'somebody', u'anonymous', None, None, None, u'new', None, u'sum2', None, None])
         self._do_test_diffs(env, 'simple.csv', self._test_import)
         self._do_test_diffs(env, 'simple_with_comments.csv', self._test_preview)
         ImporterTestCase.TICKET_TIME = ImporterTestCase.TICKET_TIME + 100
@@ -248,7 +257,7 @@ class ImporterTestCase(unittest.TestCase):
         @with_transaction(env)
         def do_insert(db):
             cursor = db.cursor()
-            _exec(cursor, "INSERT INTO ticket VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [1245, u'defect', 1191377630, 1191377630, u'component1', None, u'major', u'somebody', u'anonymous', u'', u'', u'', u'new', None, u'sum2', u'', u''])
+            _exec(cursor, "INSERT INTO ticket VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [1245, u'defect', 1191377630, 1191377630, u'component1', None, u'major', u'somebody', u'anonymous', None, None, None, u'new', None, u'sum2', None, None])
         self._do_test_diffs(env, 'simple.csv', self._test_import)
         self._do_test_diffs(env, 'simple_with_comments_and_description.csv', self._test_preview)
         ImporterTestCase.TICKET_TIME = ImporterTestCase.TICKET_TIME + 100
@@ -273,8 +282,8 @@ class ImporterTestCase(unittest.TestCase):
         @with_transaction(env)
         def do_insert(db):
             cursor = db.cursor()
-            _exec(cursor, "INSERT INTO ticket VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [1, u'defect', 1191377630, 1191377630, u'component1', None, u'major', u'somebody', u'anonymous', u'', u'', u'', u'new', None, u'summary before change', u'', u''])
-            _exec(cursor, "INSERT INTO ticket VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [2, u'defect', 1191377630, 1191377630, u'component2', None, u'major', u'somebody2', u'anonymous2', u'', u'', u'', u'new', None, u'summarybefore change', u'', u''])
+            _exec(cursor, "INSERT INTO ticket VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [1, u'defect', 1191377630, 1191377630, u'component1', None, u'major', u'somebody', u'anonymous', None, None, None, u'new', None, u'summary before change', None, None])
+            _exec(cursor, "INSERT INTO ticket VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [2, u'defect', 1191377630, 1191377630, u'component2', None, u'major', u'somebody2', u'anonymous2', None, None, None, u'new', None, u'summarybefore change', None, None])
             _exec(cursor, "INSERT INTO enum VALUES (%s, %s, %s)", ['priority', 'mypriority', '1'])
             _exec(cursor, "INSERT INTO enum VALUES (%s, %s, %s)", ['priority', 'yourpriority', '2'])
             _exec(cursor, "INSERT INTO component VALUES (%s, %s, %s)", ['mycomp', '', ''])
@@ -287,9 +296,9 @@ class ImporterTestCase(unittest.TestCase):
         @with_transaction(env)
         def do_insert(db):
             cursor = db.cursor()
-            _exec(cursor, "INSERT INTO ticket VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [1, u'defect', 1191377630, 1191377630, u'component1', None, u'major', u'somebody', u'anonymous', u'', u'', u'', u'new', None, u'a summary that is duplicated', u'', u''])
-            _exec(cursor, "INSERT INTO ticket VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [2, u'defect', 1191377630, 1191377630, u'component2', None, u'major', u'somebody2', u'anonymous2', u'', u'', u'', u'new', None, u'a summary that is duplicated', u'', u''])
-            _exec(cursor, "INSERT INTO ticket VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [3, u'defect', 1191377630, 1191377630, u'component2', None, u'major', u'somebody2', u'anonymous2', u'', u'', u'', u'new', None, u'a summary that is duplicated', u'', u''])
+            _exec(cursor, "INSERT INTO ticket VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [1, u'defect', 1191377630, 1191377630, u'component1', None, u'major', u'somebody', u'anonymous', None, None, None, u'new', None, u'a summary that is duplicated', None, None])
+            _exec(cursor, "INSERT INTO ticket VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [2, u'defect', 1191377630, 1191377630, u'component2', None, u'major', u'somebody2', u'anonymous2', None, None, None, u'new', None, u'a summary that is duplicated', None, None])
+            _exec(cursor, "INSERT INTO ticket VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [3, u'defect', 1191377630, 1191377630, u'component2', None, u'major', u'somebody2', u'anonymous2', None, None, None, u'new', None, u'a summary that is duplicated', None, None])
         self.assertEquals(self._do_test_with_exception(env, 'test-detect-duplicate-summary-in-trac.csv', self._test_preview), 'Tickets #1, #2 and #3 have the same summary "a summary that is duplicated" in Trac. Ticket reconciliation by summary can not be done. Please modify the summaries to ensure that they are unique.')
 
     def test_import_6(self):
@@ -357,8 +366,8 @@ class ImporterTestCase(unittest.TestCase):
         @with_transaction(env)
         def do_insert(db):
             cursor = db.cursor()
-            _exec(cursor, "INSERT INTO ticket VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [1, u'defect', 1191377630, 1191377630, u'component1', None, u'major', u'somebody', u'anonymous', u'', u'', u'', u'new', None, u'summary before change', u'', u''])
-            _exec(cursor, "INSERT INTO ticket VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [2, u'defect', 1191377630, 1191377630, u'component2', None, u'major', u'somebody2', u'anonymous2', u'', u'', u'', u'new', None, u'summarybefore change', u'', u''])
+            _exec(cursor, "INSERT INTO ticket VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [1, u'defect', 1191377630, 1191377630, u'component1', None, u'major', u'somebody', u'anonymous', None, None, None, u'new', None, u'summary before change', None, None])
+            _exec(cursor, "INSERT INTO ticket VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [2, u'defect', 1191377630, 1191377630, u'component2', None, u'major', u'somebody2', u'anonymous2', None, None, None, u'new', None, u'summarybefore change', None, None])
             _exec(cursor, "INSERT INTO enum VALUES (%s, %s, %s)", ['priority', 'mypriority', '1'])
             _exec(cursor, "INSERT INTO enum VALUES (%s, %s, %s)", ['priority', 'yourpriority', '2'])
             _exec(cursor, "INSERT INTO component VALUES (%s, %s, %s)", ['mycomp', '', ''])
@@ -488,9 +497,8 @@ datetime_format=%Y-%m-%d %H:%M
                           self._test_preview)
             assert False, 'No TracError'
         except TracError, e:
-            self.assertEquals('Error while reading from line 4 to 6:'
-                              ' newline inside string',
-                              unicode(e))
+            self.assertEquals('Error while reading from line 4 to 6',
+                              unicode(e).split(':', 1)[0])
 
 
 def suite():
